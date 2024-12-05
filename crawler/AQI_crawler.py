@@ -77,10 +77,8 @@ def crawler(driver: webdriver):
     if os.path.exists(MISSING_PATH):
             missing_df = pd.read_csv(MISSING_PATH)
     else:   missing_df = pd.DataFrame(columns = ['Date'])
-    # start_date = datetime.date(year = 2017, month = 1, day = 1)
-    # end_date   = datetime.date(year = 2024, month = 9, day = 30)
-    start_date = datetime.date(year = 2024, month = 1, day = 2)
-    end_date   = datetime.date(year = 2024, month = 1, day = 1)
+    start_date = datetime.date(year = 2017, month = 1, day = 1)
+    end_date   = datetime.date(year = 2024, month = 9, day = 30)
     date = start_date
     result_idx = len(result_df)
     missing_idx = len(missing_df)
