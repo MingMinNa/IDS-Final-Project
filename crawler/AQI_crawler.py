@@ -8,8 +8,8 @@ import datetime
 import time
 
 PROJECT_FOLDER = os.path.dirname(os.path.dirname(__file__))
-AQI_PATH = os.path.join(PROJECT_FOLDER, 'data', 'AQI.csv')
-MISSING_PATH = os.path.join(PROJECT_FOLDER, 'data', 'missing.csv')
+AQI_PATH = os.path.join(PROJECT_FOLDER, 'data', 'raw', 'AQI.csv')
+MISSING_PATH = os.path.join(PROJECT_FOLDER, 'data', 'raw','missing.csv')
 
 def open_calender(driver: webdriver):
 

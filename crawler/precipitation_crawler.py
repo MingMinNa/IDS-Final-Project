@@ -18,7 +18,7 @@ def main():
     StationID = "臺東"
 
     project_root = os.path.dirname(os.path.dirname(__file__))
-    csv_path = os.path.join(project_root, "data", "rainfall", "Taitung_Precipitation.csv")
+    csv_path = os.path.join(project_root, "data", "raw", "rainfall", "Taitung_Precipitation.csv")
 
     try:
         driver.get(url)
