@@ -162,4 +162,3 @@ cython_debug/
 #.idea/
 
 tmp
-空氣品質指標(AQI)(歷史資料)*.csv
