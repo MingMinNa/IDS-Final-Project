@@ -1,5 +1,6 @@
 import csv
 import os
+import time
 from selenium import webdriver
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select, WebDriverWait
@@ -9,16 +10,16 @@ from bs4 import BeautifulSoup
 options = webdriver.ChromeOptions()
 options.add_argument("--headless")
 options.add_argument("--disable-usb")
-driver = webdriver.Chrome(options=options)
+driver = webdriver.Chrome()
 
 
 def main():
     url = "https://www.cwa.gov.tw/V8/C/D/DailyPrecipitation.html"
 
-    StationID = "臺東"
+    StationID = "日月潭"
 
     project_root = os.path.dirname(os.path.dirname(__file__))
-    csv_path = os.path.join(project_root, "data", "raw", "rainfall", "Taitung_Precipitation.csv")
+    csv_path = os.path.join(project_root, "data", "raw", "rainfall", "SunMoonLake_Precipitation.csv")
 
     try:
         driver.get(url)
@@ -28,6 +29,7 @@ def main():
             writer.writerow(["Serial", "Precipitation(mm)"])
 
         for year in range(2017, 2025):
+            time.sleep(2)
             print(f"Processing: {year}")
 
             try:
