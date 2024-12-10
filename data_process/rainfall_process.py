@@ -58,7 +58,7 @@ if __name__ == '__main__':
         df = df.set_index(keys = ['Serial'])
         rainfall_dfs[site] = df
 
-    merged_aqi_df = pd.read_csv(os.path.join(PROCESSED_FOLDER, 'AQI', 'result.csv'))
+    merged_aqi_df = pd.read_csv(os.path.join(PROCESSED_FOLDER, 'result.csv'))
 
     for i in tqdm(merged_aqi_df.index):
         site, date = merged_aqi_df.loc[i, 'sitename'], merged_aqi_df.loc[i, 'datacreationdate']

@@ -10,7 +10,7 @@
     * 將轉換過的下載AQI，儲存到 ``processed`` 資料夾中的 ``tmp`` 資料夾。
 * ``generate_result``
     * 基於爬蟲AQI的日期與測站，從轉換過的AQI中，找到日期與測站相同的資料，並計算平均，作為該測站當天的汙染物平均。即計算當天不同小時汙染物的平均。
-    * 最終結果儲存在 ``processed/AQI`` 資料夾內的 ``result.csv``。
+    * 最終結果儲存在 ``processed`` 資料夾內的 ``result.csv``。
 
 * ``result_handle``
     * 基於日期與測站，對 ``result.csv`` 進行排序。

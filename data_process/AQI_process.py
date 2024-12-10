@@ -42,7 +42,7 @@ def history_AQI_filter(remaining_features: list[str]):
 def generate_result(remaining_features: list[str]):
     
     aqi_df = pd.read_csv(os.path.join(RAW_FOLDER, 'AQI.csv'))
-    result_path = os.path.join(PROCESSED_FOLDER, 'AQI', 'result.csv')
+    result_path = os.path.join(PROCESSED_FOLDER, 'result.csv')
     # use remaining features as columns & reorder the columns
     if not os.path.exists(result_path):
         result_df = pd.DataFrame(columns = remaining_features + ['aqi_2'])['datacreationdate,sitename,county,aqi,aqi_2,so2,co,o3,o3_8hr,pm10,pm2.5,no2,nox,no,windspeed,winddirec,co_8hr,pm2.5_avg,pm10_avg'.split(',')]
@@ -103,7 +103,7 @@ def generate_result(remaining_features: list[str]):
     return
 
 def result_handle():
-    result_path = os.path.join(PROCESSED_FOLDER, 'AQI', 'result.csv')
+    result_path = os.path.join(PROCESSED_FOLDER, 'result.csv')
     result_df = pd.read_csv(result_path)
     aqi_df = pd.read_csv(os.path.join(RAW_FOLDER, 'AQI.csv'))
 
