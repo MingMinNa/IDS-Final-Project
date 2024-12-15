@@ -16,9 +16,13 @@ sitenames = ['萬里', '安南', '冬山', '忠明', '新港', '大寮', '士林
              '朴子', '楠梓', '三義', '崙背', '古亭', '沙鹿', '汐止', '斗六', 
              '新店', '菜寮', '竹東', '萬華']
 
+# project folder(root folder)
 PROJECT_FOLDER = __get_parent_folder(__file__, 2)
 
 # data folder
 DATA_FOLDER = os.path.join(PROJECT_FOLDER, 'data')
 PROCESSED_FOLDER = os.path.join(DATA_FOLDER, 'processed')
 RAW_FOLDER = os.path.join(DATA_FOLDER, 'raw')
+
+# model folder
+MODEL_FOLDER = os.path.join(PROJECT_FOLDER, 'model')

@@ -2,19 +2,26 @@ import pandas as pd
 import numpy as np
 import os
 from tqdm import tqdm
+from sklearn.preprocessing import StandardScaler
 
 try:    import const
 except: from . import const
 
-def preprocess():
-    pass
+def preprocess(X):
+
+    scaler = StandardScaler()
+    for feature in X.columns:
+        if feature in ['sitename', 'Year', 'Month', 'Day']: continue
+        X.loc[:, [feature]] = scaler.fit_transform(X.loc[:, [feature]])
+
+    return X
 
 def load_dataset(sitename = None):
 
     if (sitename is not None) and (sitename not in const.sitenames):
         raise ValueError(f'The sitename({sitename}) is not in the dataset')
     
-    data = pd.read_csv(os.path.join(const.PROCESSED_FOLDER, 'final_result.csv'))
+    data = pd.read_csv(os.path.join(const.PROCESSED_FOLDER, 'train_data.csv'))
     '''
     All features:
         datacreationdate,sitename,county,aqi,aqi_2,so2,
@@ -28,11 +35,11 @@ def load_dataset(sitename = None):
         data[new_feature] = data['datacreationdate'].apply(lambda date:int(date.split('-')[idx]))
 
     # features to remove
-    remove_features = 'aqi,so2,winddirec,windspeed,county'.split(',')
+    remove_features = 'aqi,windspeed,winddirec,county'.split(',')
     data.drop(columns = remove_features + ['datacreationdate'], inplace = True)
 
     data = data[data[['next_aqi']].notna().any(axis=1)]
-    data = data.dropna(subset = 'co,o3,o3_8hr,pm10,pm2.5,no2,nox,no,co_8hr,pm2.5_avg,pm10_avg'.split(','), how = 'all').reset_index(drop = True)
+    data = data.dropna(subset = 'so2,co,o3,o3_8hr,pm10,pm2.5,no2,nox,no,co_8hr,pm2.5_avg,pm10_avg'.split(','), how = 'all').reset_index(drop = True)
 
     
     # if the feature value is less than 0, set the value to 0
@@ -62,7 +69,8 @@ def load_dataset(sitename = None):
                 for col in data.columns:
                     if col == 'sitename' or not pd.isna(na_data.loc[i, col]): continue
                     data.loc[i, col] = cond_data[col].mean()
-
+        
+        data.reset_index(drop = True, inplace = True)
         return data[remaining_features], data['next_aqi']
     else:
 
@@ -80,6 +88,7 @@ def load_dataset(sitename = None):
                 data.loc[i, col] = cond_data[col].mean()
         
         data = data[data['sitename'] == sitename]
+        data.reset_index(drop = True, inplace = True)
         return data[remaining_features], data['next_aqi']
 
 if __name__ == '__main__':
