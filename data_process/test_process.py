@@ -94,4 +94,6 @@ if __name__ == '__main__':
         site, date = test_aqi_df.loc[i, 'sitename'], test_aqi_df.loc[i, 'datacreationdate']
         test_aqi_df.loc[i, 'Precipitation(mm)'] = rainfall_dfs[aqi_sites[site]].loc[date, 'Precipitation(mm)']
 
+    test_aqi_df.rename(columns={"aqi": "aqi_2"}, inplace=True)
+    test_aqi_df = test_aqi_df['datacreationdate,sitename,county,aqi_2,so2,co,o3,o3_8hr,pm10,pm2.5,no2,nox,no,windspeed,winddirec,co_8hr,pm2.5_avg,pm10_avg,Precipitation(mm),next_aqi'.split(',')]
     test_aqi_df.to_csv(os.path.join(PROCESSED_FOLDER, 'test_data.csv'), index = False)

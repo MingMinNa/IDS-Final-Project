@@ -16,12 +16,16 @@ def preprocess(X):
 
     return X
 
-def load_dataset(sitename = None):
+def load_dataset(sitename = None, is_train = True):
 
     if (sitename is not None) and (sitename not in const.sitenames):
         raise ValueError(f'The sitename({sitename}) is not in the dataset')
     
-    data = pd.read_csv(os.path.join(const.PROCESSED_FOLDER, 'train_data.csv'))
+    if is_train:
+        data = pd.read_csv(os.path.join(const.PROCESSED_FOLDER, 'train_data.csv'))
+    else:
+        data = pd.read_csv(os.path.join(const.PROCESSED_FOLDER, 'test_data.csv'))
+
     '''
     All features:
         datacreationdate,sitename,county,aqi,aqi_2,so2,
@@ -35,7 +39,7 @@ def load_dataset(sitename = None):
         data[new_feature] = data['datacreationdate'].apply(lambda date:int(date.split('-')[idx]))
 
     # features to remove
-    remove_features = 'aqi,windspeed,winddirec,county'.split(',')
+    remove_features = 'windspeed,winddirec,county'.split(',') + (['aqi'] if is_train else [])
     data.drop(columns = remove_features + ['datacreationdate'], inplace = True)
 
     data = data[data[['next_aqi']].notna().any(axis=1)]

@@ -7,10 +7,43 @@ import matplotlib.pyplot as plt
 from utils import dataset, const
 from utils.models import regression_nn, xgboost
 
-def main():
+def test_models():
+
     for site in tqdm(const.sitenames):
-        X, y = dataset.load_dataset(sitename = site)
+
+        X, y = dataset.load_dataset(sitename = site, is_train = False)
+        X.drop(columns = ["sitename", "Year", "Day"], inplace = True)
+
+        regression_path = os.path.join(const.MODEL_FOLDER, f"regression({site}).pth")
+        xgboost_path = os.path.join(const.MODEL_FOLDER, f'xgboost({site}).json')
+        ensemble_path = os.path.join(const.MODEL_FOLDER, f"ensemble({site}).pth")
         
+        regression_model = regression_nn.load_model(X.shape[1], 1, regression_path)
+        xgboost_model = xgboost.load_model(xgboost_path)
+        ensemble_model = regression_nn.load_model(X.shape[1] + 2, 1 , ensemble_path)
+
+        regression_y = regression_nn.predict(regression_model, X)
+        xgboost_y = xgboost.predict(xgboost_model, X)
+        X['regression'] = regression_y.cpu()
+        X['xgboost'] = xgboost_y
+
+        ensemble_y = regression_nn.predict(ensemble_model, X)
+        error = np.abs(ensemble_y.cpu().squeeze().numpy() - y.to_numpy())
+        mae = np.sum(error) / len(y)
+
+        plt.figure(figsize=(8, 6))
+        plt.hist(error, bins = 10, color = "skyblue", edgecolor = "black", alpha=0.7)
+        plt.title(f"Error Distribution (MAE = {mae:.3f})", fontsize = 16)
+        plt.xlabel("Error", fontsize = 14)
+        plt.ylabel("Frequency", fontsize = 14)
+        plt.grid(axis = "y", linestyle = "--", alpha = 0.7)        
+        plt.savefig(os.path.join(const.MODEL_FOLDER, 'img', 'test', f"ensemble_losses({site}).png"))
+
+
+def train_models():
+    for site in tqdm(const.sitenames):
+
+        X, y = dataset.load_dataset(sitename = site)
         X.drop(columns = ["sitename", "Year", "Day"], inplace = True)
         
         regression_path = os.path.join(const.MODEL_FOLDER, f"regression({site}).pth")
@@ -55,10 +88,8 @@ def main():
 
         plt.tight_layout()
 
-        plt.savefig(os.path.join(const.MODEL_FOLDER, 'img',f"regression_losses({site}).png"))
-
-
-
+        plt.savefig(os.path.join(const.MODEL_FOLDER, 'img', 'train', f"ensemble_losses({site}).png"))
 
 if __name__ == '__main__':
-    main()
+    # train_models()
+    test_models()
