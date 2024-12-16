@@ -3,6 +3,8 @@ import os
 import numpy as np
 from tqdm import tqdm
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+from matplotlib.dates import DateFormatter
 
 from utils import dataset, const
 from utils.models import regression_nn, xgboost
@@ -65,6 +67,7 @@ def test_models():
         X, y = dataset.load_dataset(sitename = site, is_train = False)
         X.drop(columns = ["sitename", "Year", "Day"], inplace = True)
 
+        
         regression_path = os.path.join(const.MODEL_FOLDER, f"regression({site}).pth")
         xgboost_path = os.path.join(const.MODEL_FOLDER, f'xgboost({site}).json')
         ensemble_path = os.path.join(const.MODEL_FOLDER, f"ensemble({site}).pth")
@@ -108,6 +111,7 @@ def test_models():
         error = np.abs(ensemble_y.cpu().squeeze().numpy() - y.to_numpy())
         mae = np.sum(error) / len(y)
 
+        # ensemble_error
         axes[1].hist(error, bins = 10, color = "skyblue", edgecolor = "black", alpha=0.7)
         axes[1].set_title(f"[Only Rain] Error Distribution (MAE = {mae:.3f})", fontsize = 14)
         axes[1].set_xlabel("Error", fontsize = 12)
@@ -116,6 +120,42 @@ def test_models():
 
 
         img_path = os.path.join(const.MODEL_FOLDER, 'img', 'test', f"ensemble_error({site}).png")
+        plt.tight_layout()
+        plt.savefig(img_path)
+
+
+        # ensemble_predict
+        X, y = dataset.load_dataset(sitename = site, is_train = False)
+        test_dates = X.apply(lambda row: f"{int(row['Year'])}-{int(row['Month']):02d}-{int(row['Day']):02d}", axis=1).tolist()        
+        X.drop(columns = ["sitename", "Year", "Day"], inplace = True)
+
+        regression_y = regression_nn.predict(regression_model, X)
+        xgboost_y = xgboost.predict(xgboost_model, X)
+        X['regression'] = regression_y.cpu()
+        X['xgboost'] = xgboost_y
+
+        ensemble_y = regression_nn.predict(ensemble_model, X)
+
+        fig, ax = plt.subplots(figsize = (8, 5))
+        
+        ax.plot(test_dates, y.to_numpy(), 
+                label='Actual AQI', marker='x', linestyle='-', color='blue')
+        
+        ax.plot( test_dates, ensemble_y.cpu().squeeze().numpy(), 
+                label='Predicted AQI', marker='o', linestyle='--', color='orange')
+
+        ax.set_title(f"AQI Prediction vs Actual", fontsize=16)
+        ax.set_xlabel("Date", fontsize = 12)
+        ax.set_ylabel("AQI", fontsize = 12)
+
+        plt.xticks(rotation = 45)
+        ax.xaxis.set_major_locator(mdates.DayLocator(interval=5))
+        ax.xaxis.set_major_formatter(DateFormatter('%Y-%m-%d'))
+
+        ax.legend(loc = 'upper right', fontsize = 10)
+
+        ax.grid(axis = "y", linestyle = '--', alpha = 0.7)
+        img_path = os.path.join(const.MODEL_FOLDER, 'img', 'test', f"ensemble_predict({site}).png")
         plt.tight_layout()
         plt.savefig(img_path)
 
