@@ -149,12 +149,11 @@ def test_models():
         ax.set_ylabel("AQI", fontsize = 12)
 
         plt.xticks(rotation = 45)
-        ax.xaxis.set_major_locator(mdates.DayLocator(interval=5))
-        ax.xaxis.set_major_formatter(DateFormatter('%Y-%m-%d'))
+        ax.xaxis.set_ticks([test_dates[i] for i in range(0, len(test_dates), 5)])
 
         ax.legend(loc = 'upper right', fontsize = 10)
 
-        ax.grid(axis = "y", linestyle = '--', alpha = 0.7)
+        ax.grid(axis = "both", linestyle = '--', alpha = 0.7)
         img_path = os.path.join(const.MODEL_FOLDER, 'img', 'test', f"ensemble_predict({site}).png")
         plt.tight_layout()
         plt.savefig(img_path)
