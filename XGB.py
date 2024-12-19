@@ -8,7 +8,7 @@ from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 from xgboost import XGBRegressor
-from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.metrics import mean_absolute_error
 
 def preprocess_data(X_train, X_test):
     # Separate numeric and categorical features
@@ -31,33 +31,33 @@ def preprocess_data(X_train, X_test):
     X_train_processed = preprocessor.fit_transform(X_train)
     X_test_processed = preprocessor.transform(X_test)
 
-    return X_train_processed, X_test_processed
+    return X_train_processed, X_test_processed, preprocessor
 
 
-def main():
-    file_path = 'data/processed/data_other_years.csv'
-    train_data = pd.read_csv(file_path)
-    
-    file_path = 'data/processed/data_2024.csv'
-    test_data = pd.read_csv(file_path)
+def train_predict_model(train_data, test_data, target_column, target_columns):
+    # Prepare features and target
+    X_train = train_data.drop(columns=target_columns)
+    X_train = train_data.drop(columns=["county"])
+    y_train = train_data[target_column]
 
-    X_train = train_data.drop(columns=['next_aqi'])
-    y_train = train_data['next_aqi']
-
-    X_test = test_data.drop(columns=['next_aqi'])
-    y_test = test_data['next_aqi']
+    X_test = test_data.drop(columns=target_columns)
+    X_test = test_data.drop(columns=["county"])
+    y_test = test_data[target_column]
     
     # Split the training data into training and validation sets
     tmp_X_train, tmp_X_val, tmp_y_train, tmp_y_val = train_test_split(
         X_train, y_train, test_size=0.2, random_state=42)
 
     # Preprocess the data
-    tmp_X_train_processed, tmp_X_val_processed = preprocess_data(tmp_X_train, tmp_X_val)
-    X_train_processed, X_test_processed = preprocess_data(X_train, X_test)
+    tmp_X_train_processed, tmp_X_val_processed, preprocessor = preprocess_data(tmp_X_train, tmp_X_val)
+    X_train_processed, X_test_processed, _ = preprocess_data(X_train, X_test)
     
     # Define the model
-    xgb = XGBRegressor(objective='reg:squarederror', random_state=42)
-
+    xgb = XGBRegressor(
+        verbosity=1,               # Optional: set verbosity to see training info
+        objective='reg:absoluteerror',
+        random_state=42
+    )
     # Define parameter distributions for random search
     param_distributions = {
         "n_estimators": [100, 200, 300, 400, 500],
@@ -73,41 +73,84 @@ def main():
         xgb,
         param_distributions,
         n_iter=50,
-        scoring="neg_mean_squared_error",  # Regression scoring
-        cv=5,  # 5-fold cross-validation
-        verbose=1,
+        scoring='neg_mean_absolute_error',
+        cv=5,
+        verbose=0,
         n_jobs=-1,
         random_state=42,
     )
 
-    # Perform random search
+    # Fit the model
     rand_search.fit(tmp_X_train_processed, tmp_y_train)
 
-    # Best model and parameters
+    # Best model
     best_model = rand_search.best_estimator_
-    best_params = rand_search.best_params_
-
-    # print("Best Parameters:", best_params)
 
     # Evaluate on the validation set
     tmp_y_val_pred = best_model.predict(tmp_X_val_processed)
-    mse = mean_squared_error(tmp_y_val, tmp_y_val_pred)
-    r2 = r2_score(tmp_y_val, tmp_y_val_pred)
+    mae = mean_absolute_error(tmp_y_val, tmp_y_val_pred)
 
-    print(f"Validation Mean Squared Error: {mse:.2f}")
-    print(f"Validation R² Score: {r2:.2f}")
-    # Validation Mean Squared Error: 281.19
-    # Validation R² Score: 0.78
+    print(f"Model for {target_column}:")
+    print(f"Validation Mean Absolute Error: {mae:.2f}")
 
-    # Save the trained model
-    # best_model.save_model("best_xgb_model.json")
-    # print("Model saved as 'best_xgb_model.json'")
-
+    # Predict on test data
     y_pred = best_model.predict(X_test_processed)
 
-    mse = mean_squared_error(y_test, y_pred)
-    print(f"Mean Squared Error of the best model: {mse}")
-    # Mean Squared Error of the best model: 336.29913758809465
-    
+    # Create a result DataFrame
+    result_df = test_data[['year', 'month', 'day', 'sitename']].copy()
+    result_df[f'predicted_{target_column}'] = y_pred
+    result_df[f'actual_{target_column}'] = y_test.values
+
+    return result_df, mae
+
+
+def main():
+    # Read the data
+    train_data = pd.read_csv('data/train_data.csv')
+    test_data = pd.read_csv('data/test_data.csv')
+
+    # List of target columns to predict
+    target_columns = [
+        'next_so2', 'next_co', 'next_o3_8hr', 
+        'next_o3', 'next_pm2.5', 'next_pm10', 'next_no2'
+    ]
+
+    # target_columns = ['next_so2'] # temp
+
+    # Store all results
+    all_results = []
+    performance_metrics = {}
+
+    unique_counties = train_data['county'].unique()
+
+    for county in unique_counties:
+        print(f"Processing data for county: {county}")
+        current_train_data = train_data[train_data['county'] == county]
+        current_test_data = test_data[test_data['county'] == county]
+
+        # Initialize a DataFrame to store all results for the current county
+        county_results = pd.DataFrame()
+
+        # Train and predict for each target column
+        for target_column in target_columns:
+            result_df, mae= train_predict_model(current_train_data, current_test_data, target_column, target_columns)
+
+            # Add the target column name as a prefix to the result columns to avoid conflicts
+            # result_df = result_df.add_prefix(f"{target_column}_")
+
+            # Concatenate the result with the county_results DataFrame
+            if county_results.empty:
+                county_results = result_df
+            else:
+                county_results = pd.concat([county_results, result_df], axis=1)
+
+        # Add the county column to the county_results DataFrame
+        county_results['county'] = county
+
+        # Save the aggregated results to a CSV file
+        filename = f"data/XGB_result_{county}.csv"
+        county_results.to_csv(filename, index=False)
+
+
 if __name__ == "__main__":
     main()
