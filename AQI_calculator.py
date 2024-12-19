@@ -2,10 +2,10 @@ import pandas as pd
 import os
 import matplotlib.pyplot as plt
 
-input_csv = os.path.join("output", "LSTM_predictions.csv")
+input_csv = os.path.join("output", "LSTM_pred_with_precipitation.csv")
 output_csv = os.path.join("output", "LSTM_calc.csv")
 
-img_dir = os.path.join("output", "img")
+img_dir = os.path.join("img", "LSTM_pred_features_with_precipitation")
 os.makedirs(img_dir, exist_ok=True)
 
 
@@ -80,6 +80,7 @@ def calc_sub_index(pollutant, value):
         if BP_L <= value <= BP_H:
             I = (I_H - I_L) / (BP_H - BP_L) * (value - BP_L) + I_L
             return I
+
     return 0
 
 
@@ -106,26 +107,34 @@ def compute_aqi(row):
     return aqi
 
 
+def cm_to_inch(cm):
+    return cm / 2.54
+
+
 def main():
     df = pd.read_csv(input_csv)
     df["calc_AQI"] = df.apply(compute_aqi, axis=1)
     df["calc_AQI"] = df["calc_AQI"].round(3)
+    df["abs_diff"] = (df["aqi_2"] - df["calc_AQI"]).abs()
 
-    # 只保留指定的欄位
-    df = df[["datacreationdate", "sitename", "aqi_2", "calc_AQI"]]
+    total_abs_diff = df["abs_diff"].sum()
+    print(f"Total Absolute Difference between aqi_2 and calc_AQI: {total_abs_diff}")
 
-    # 輸出 CSV
+    df = df[["datacreationdate", "sitename", "aqi_2", "calc_AQI", "abs_diff"]]
+
     df.to_csv(output_csv, index=False)
-    print("AQI計算完成，結果已儲存至：", output_csv)
+    print("File saved at ", output_csv)
 
     df["datacreationdate"] = pd.to_datetime(df["datacreationdate"], errors="coerce")
 
     for sitename, group in df.groupby("sitename"):
         group = group.sort_values("datacreationdate")
         plt.figure(figsize=(10, 6))
-        plt.plot(group["datacreationdate"], group["aqi_2"], marker="o", label="AQI_2(original)")
-        plt.plot(group["datacreationdate"], group["calc_AQI"], marker="x", label="calc_AQI(predicted)")
+        plt.plot(group["datacreationdate"], group["aqi_2"], marker="x", label="Actual AQI")
+        plt.plot(group["datacreationdate"], group["calc_AQI"], marker="o", label="Predicted AQI")
 
+        plt.rcParams["font.sans-serif"] = ["Microsoft JhengHei"]
+        plt.rcParams["axes.unicode_minus"] = False
         plt.title(f"AQI Comparison for {sitename}")
         plt.xlabel("Date")
         plt.ylabel("AQI")

@@ -20,9 +20,6 @@ os.makedirs(model_dir, exist_ok=True)
 output_dir = os.path.join(project_root, "output")
 os.makedirs(output_dir, exist_ok=True)
 
-img_dir = os.path.join(project_root, "img")
-os.makedirs(img_dir, exist_ok=True)
-
 
 def create_sequences(data, seq_length):
     X_seq = []
@@ -47,7 +44,10 @@ def main():
         "co_8hr",
         "pm2.5_avg",
         "pm10_avg",
+        "precipitation",
     ]
+
+    precipitation_index = features.index("precipitation")
 
     seq_length = 15
 
@@ -112,6 +112,8 @@ def main():
 
         y_pred_inverse = scaler.inverse_transform(y_pred_seq)
 
+        y_pred_inverse[:, precipitation_index] = np.maximum(y_pred_inverse[:, precipitation_index], 0)
+
         prediction_dates = site_test_data.iloc[seq_length:][["datacreationdate", "sitename", "aqi_2"]].copy()
         pred_df = pd.DataFrame(y_pred_inverse, columns=[f"pred_{f}" for f in features])
         result_df = pd.concat([prediction_dates.reset_index(drop=True), pred_df], axis=1)
@@ -119,7 +121,7 @@ def main():
         all_sites_results.append(result_df)
 
     final_result_df = pd.concat(all_sites_results, ignore_index=True)
-    final_csv_path = os.path.join(output_dir, "LSTM_predictions.csv")
+    final_csv_path = os.path.join(output_dir, "LSTM_pred_with_precipitation.csv")
     final_result_df.to_csv(final_csv_path, index=False)
     print(f"All sites predictions saved at {final_csv_path}")
 
