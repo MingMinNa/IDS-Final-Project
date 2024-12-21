@@ -7,7 +7,8 @@ import re
 
 PROJECT_FOLDER = os.path.dirname(os.path.dirname(__file__))
 RAW_FOLDER = os.path.join(PROJECT_FOLDER, 'data', 'raw')
-PROCESSED_FOLDER = os.path.join(PROJECT_FOLDER, 'data', 'processed')
+# PROCESSED_FOLDER = os.path.join(PROJECT_FOLDER, 'data', 'processed')
+PROCESSED_FOLDER = os.path.join(PROJECT_FOLDER, 'data', 'ming')
 TMP_FOLDER = os.path.join(PROCESSED_FOLDER, 'tmp')
 
 def remove_folder(folder_path):
@@ -121,6 +122,19 @@ def result_handle():
     result_df.to_csv(result_path, index = False)
     return
 
+def add_next_aqi():
+    final_result_df = pd.read_csv(os.path.join(PROCESSED_FOLDER, 'final_result.csv'))
+
+    final_result_df.sort_values(by = ['sitename', 'datacreationdate'], inplace = True)
+    final_result_df.reset_index(inplace = True, drop = True)
+
+    for i in tqdm(range(len(final_result_df) - 1)):
+        if final_result_df.loc[i, 'sitename'] != final_result_df.loc[i + 1, 'sitename']:
+            continue
+        final_result_df.loc[i, 'next_aqi'] = final_result_df.loc[i + 1, 'aqi_2']
+    
+    final_result_df.to_csv(os.path.join(PROCESSED_FOLDER, 'final_result.csv'), index = False)
+
 if __name__ == '__main__':
 
     raw_AQI_features = 'sitename,county,aqi,pollutant,status,so2,co,o3,o3_8hr,pm10,pm2.5,no2,nox,no,windspeed,winddirec,datacreationdate,unit,co_8hr,pm2.5_avg,pm10_avg,so2_avg,longitude,latitude,siteid'.split(',')
@@ -130,8 +144,7 @@ if __name__ == '__main__':
     remaining_features = [feature for feature in raw_AQI_features if feature not in removed_features]
 
     # history_AQI_filter(remaining_features)
-
-    generate_result(remaining_features)
-
+    # generate_result(remaining_features)
     # result_handle()
+    # add_next_aqi()
 
